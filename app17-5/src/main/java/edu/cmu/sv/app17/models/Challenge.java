@@ -7,16 +7,16 @@ import java.awt.image.BufferedImage;
 
 public class Challenge {
     String id = null;
-    String challenegName, challengeDescription, challengeCreatedDate, challengeType ;
+    String challengeName, challengeDescription, challengeCreatedDate, challengeType ;
 
 
     String userId;
 
-    public Challenge(String challenegName, String challengeDescription, String challengeCreatedDate, String challengeType,String userId) {
-        this.challenegName = challenegName;
+    public Challenge(String challengeName, String challengeDescription, String challengeCreatedDate, String challengeType,String userId) {
+        this.challengeName = challengeName;
         this.challengeDescription = challengeDescription;
         this.challengeCreatedDate = challengeCreatedDate;
-        this. challengeType = challengeType;
+        this.challengeType = challengeType;
 
         this.userId = userId;
 

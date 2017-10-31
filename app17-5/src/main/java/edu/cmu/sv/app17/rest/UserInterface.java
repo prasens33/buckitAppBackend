@@ -17,6 +17,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.json.JSONException;
 import org.json.JSONObject;
+import com.mongodb.async.SingleResultCallback;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -37,13 +38,15 @@ public class UserInterface {
     private MongoCollection<Document> friendRequestCollection;
     private MongoCollection<Document> friendCollection;
     private MongoCollection<Document> challengeRequestCollection;
+    private MongoCollection<Document> challengeImageCollection;
+    private MongoCollection<Document> profileImageCollection;
 
     private ObjectWriter ow;
 
 
     public UserInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB4");
 
         this.collection = database.getCollection("users");
         this.challengeCollection = database.getCollection("challenges");
@@ -54,6 +57,8 @@ public class UserInterface {
         this.friendRequestCollection = database.getCollection("friendRequests");
         this.friendCollection = database.getCollection("friends");
         this.challengeRequestCollection = database.getCollection("challengeRequests");
+        this.challengeImageCollection = database.getCollection("challengeImages");
+        this.profileImageCollection = database.getCollection("profileImages");
 
         ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
 
@@ -85,7 +90,9 @@ public class UserInterface {
             item.getString("firstName"),
                     item.getString("lastName"),
                     item.getString("emailAddress"),
-                    item.getInteger("score")
+                    item.getInteger("score"),
+                    item.getString("profilePictureLink")
+
             );
             user.setId(item.getObjectId("_id").toString());
             userList.add(user);
@@ -111,7 +118,9 @@ public class UserInterface {
                     item.getString("firstName"),
                     item.getString("lastName"),
                     item.getString("emailAddress"),
-                    item.getInteger("score")
+                    item.getInteger("score"),
+                    item.getString("profilePictureLink")
+
             );
             user.setId(item.getObjectId("_id").toString());
             return user;
@@ -193,13 +202,13 @@ public class UserInterface {
                 .append("challengeCreatedDate", json.getString("challengeCreatedDate"))
                 .append("challengeType", json.getString("challengeType"))
                 .append("userId", id);
+        addPoints(id);
         challengeCollection.insertOne(doc);
         return request;
     }
 
 
     //Post a user
-
     @POST
     @Consumes({ MediaType.APPLICATION_JSON})
     @Produces({ MediaType.APPLICATION_JSON})
@@ -224,13 +233,22 @@ public class UserInterface {
         if (!json.has("score") ) {
             throw new APPBadRequestException(55,"missing score");
         }
+        if (!json.has("profilePictureLink") ) {
+            throw new APPBadRequestException(55,"missing profilePictureLink");
+        }
+
 
             // You need to add all other fields
             Document doc = new Document("firstName", json.getString("firstName"))
                     .append("lastName", json.getString("lastName"))
                     .append("emailAddress", json.getString("emailAddress"))
-                    .append("score", json.getString("score"));
-            collection.insertOne(doc);
+                    .append("score", json.getInt("score"))
+                    .append("profilePictureLink", json.getString("profilePictureLink"));
+        //collection.insertOne(doc);
+        //ObjectId id = (ObjectId)doc.get("_id");
+        collection.insertOne(doc);
+
+
 
         return request;
     }
@@ -262,7 +280,9 @@ public class UserInterface {
             if (json.has("emailAddress"))
                 doc.append("emailAddress",json.getString("emailAddress"));
             if (json.has("score"))
-                doc.append("score",json.getString("score"));
+                doc.append("score",json.getInt("score"));
+            if (json.has("profilePictureLink"))
+                doc.append("profilePictureLink",json.getInt("profilePictureLink"));
             Document set = new Document("$set", doc);
             collection.updateOne(query,set);
 
@@ -272,6 +292,10 @@ public class UserInterface {
         }
         return request;
     }
+
+    
+    
+    
 
     //Patch a challenge
     @PATCH
@@ -318,7 +342,7 @@ public class UserInterface {
         BasicDBObject query = new BasicDBObject();
         try {
             query.put("_id", new ObjectId(id));
-            Document item = collection.find(query).first();
+            Document item = challengeCollection.find(query).first();
             if (item == null) {
                 throw new APPNotFoundException(0, "No such challenge, my friend");
             }
@@ -417,6 +441,7 @@ public class UserInterface {
 
         Document doc = new Document("challengeId", json.getString("challengeId"))
                 .append("userId", id);
+        addPoints(id);
         completedChallengeCollection.insertOne(doc);
         return request;
     }
@@ -573,11 +598,11 @@ public class UserInterface {
             throw new APPBadRequestException(55,"missing requestStatus");
 
         Document doc = new Document("receiverId", json.getString("receiverId"))
-                .append("receiverFirstName", json.getBoolean("receiverFirstName"))
-                .append("receiverLastName", json.getBoolean("receiverLastName"))
+                .append("receiverFirstName", json.getString("receiverFirstName"))
+                .append("receiverLastName", json.getString("receiverLastName"))
                 .append("senderId", id)
-                .append("senderFirstName", json.getBoolean("senderFirstName"))
-                .append("senderLastName", json.getBoolean("senderLastName"))
+                .append("senderFirstName", json.getString("senderFirstName"))
+                .append("senderLastName", json.getString("senderLastName"))
                 .append("requestStatus", json.getBoolean("requestStatus"));
         friendRequestCollection.insertOne(doc);
         addNotification(json.getString("receiverId"),"friendRequest");
@@ -642,13 +667,10 @@ public class UserInterface {
             if (json.has("requestStatus"))
                 doc.append("requestStatus",json.getBoolean("requestStatus"));
             Document set = new Document("$set", doc);
-            friendRequestCollection.updateOne(query,set);
-
-
             Document item = friendRequestCollection.find(query).first();
-                if (item == null) {
-                    throw new APPNotFoundException(0, "No such friendRequest, my friend");
-                }
+            if (item == null) {
+                throw new APPNotFoundException(0, "No such friendRequest, my friend");
+            }
             String senderId = item.getString("senderId");
             String senderFirstName = item.getString("senderFirstName");
             String senderLastName = item.getString("senderLastName");
@@ -659,6 +681,10 @@ public class UserInterface {
 
             addFriend(senderId,receiverId,senderFirstName,senderLastName,receiverFirstName,receiverLastName);
             addFriend(receiverId,senderId,receiverFirstName,receiverLastName,senderFirstName,senderLastName);
+            friendRequestCollection.updateOne(query,set);
+
+
+
 
         } catch(JSONException e) {
             System.out.println("Failed to create a document");
@@ -694,7 +720,7 @@ public class UserInterface {
             BasicDBObject query = new BasicDBObject();
             query.put("userId", id);
 
-            FindIterable<Document> results = friendRequestCollection.find(query);
+            FindIterable<Document> results = friendCollection.find(query);
             for (Document item : results) {
                 String userId = item.getString("userId");
                 Friend friend = new Friend(
@@ -731,8 +757,7 @@ public class UserInterface {
         catch (JsonProcessingException e) {
             throw new APPBadRequestException(33, e.getMessage());
         }
-        if (!json.has("challengerId"))
-            throw new APPBadRequestException(55,"missing challengerId");
+
         if (!json.has("challengeReceiverId"))
             throw new APPBadRequestException(55,"missing challengeReceiverId");
         if (!json.has("challengeId"))
@@ -748,7 +773,94 @@ public class UserInterface {
         return request;
     }
 
+    @POST
+    @Path("{id}/challengeImage")
+    @Consumes({ MediaType.APPLICATION_JSON})
+    @Produces({ MediaType.APPLICATION_JSON})
+    public Object postChallengeImage(@PathParam("id") String id, Object request) {
+        JSONObject json = null;
+        try {
+            json = new JSONObject(ow.writeValueAsString(request));
+        }
+        catch (JsonProcessingException e) {
+            throw new APPBadRequestException(33, e.getMessage());
+        }
 
+        if (!json.has("challengeId"))
+            throw new APPBadRequestException(55,"missing challengeId");
+        if (!json.has("challengeImageLink"))
+            throw new APPBadRequestException(55,"missing challengeImageLink");
+
+        Document doc = new Document("challengeId", json.getString("challengeId"))
+                .append("challengeImageLink", json.getString("challengeImageLink"))
+                .append("userId", id);
+
+        challengeImageCollection.insertOne(doc);
+
+        return request;
+    }
+
+
+/*
+    @POST
+    @Path("{id}/profileImage")
+    @Consumes({ MediaType.APPLICATION_JSON})
+    @Produces({ MediaType.APPLICATION_JSON})
+    public Object postProfileImage(@PathParam("id") String id, Object request) {
+        JSONObject json = null;
+        try {
+            json = new JSONObject(ow.writeValueAsString(request));
+        }
+        catch (JsonProcessingException e) {
+            throw new APPBadRequestException(33, e.getMessage());
+        }
+
+        if (!json.has("challengeImageLink"))
+            throw new APPBadRequestException(55,"missing challengeImageLink");
+
+        Document doc = new Document("challengeImageLink", json.getString("challengeImageLink"))
+                .append("userId", id);
+
+        profileImageCollection.insertOne(doc);
+
+        return request;
+    }
+
+*/
+
+    public void addPoints(String id) {
+        try {
+            Integer score;
+
+            BasicDBObject query = new BasicDBObject();
+            try {
+                query.put("_id", new ObjectId(id));
+                Document item = collection.find(query).first();
+                if (item == null) {
+                    throw new APPNotFoundException(0, "No such user, my friend");
+                }
+                        score = item.getInteger("score");
+                        score = score + 100;
+
+            } catch(APPNotFoundException e) {
+                throw new APPNotFoundException(0,"No such User");
+            } catch(IllegalArgumentException e) {
+                throw new APPBadRequestException(45,"Doesn't look like MongoDB ID");
+            }  catch(Exception e) {
+                throw new APPInternalServerException(99,"Something happened, pinch me!");
+            }
+
+            Document doc = new Document();
+
+            doc.append("score",score);
+            Document set = new Document("$set", doc);
+            collection.updateOne(query,set);
+
+        } catch(JSONException e) {
+            System.out.println("Failed to create a document");
+
+        }
+    }
 
 
 }

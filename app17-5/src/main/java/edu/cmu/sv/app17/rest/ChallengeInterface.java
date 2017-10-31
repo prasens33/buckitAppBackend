@@ -12,6 +12,7 @@ import com.mongodb.client.result.DeleteResult;
 import edu.cmu.sv.app17.exceptions.APPBadRequestException;
 import edu.cmu.sv.app17.exceptions.APPInternalServerException;
 import edu.cmu.sv.app17.exceptions.APPNotFoundException;
+import edu.cmu.sv.app17.models.Image;
 import edu.cmu.sv.app17.helpers.PATCH;
 
 import edu.cmu.sv.app17.models.Challenge;
@@ -30,12 +31,14 @@ import java.util.ArrayList;
 public class ChallengeInterface {
 
     private MongoCollection<Document> collection = null;
+    private MongoCollection<Document> challengeImageCollection;
     private ObjectWriter ow;
 
     public ChallengeInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB4");
         collection = database.getCollection("challenges");
+        this.challengeImageCollection = database.getCollection("challengeImages");
         ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
     }
 
@@ -102,6 +105,74 @@ public class ChallengeInterface {
 
 
     }
+
+    @GET
+    @Path("{id}/challengeImage")
+    @Produces({MediaType.APPLICATION_JSON})
+    public ArrayList<Image> getChallengeImageForUser(@PathParam("id") String id) {
+
+        ArrayList<Image> challengeImageList = new ArrayList<Image>();
+
+        try {
+            BasicDBObject query = new BasicDBObject();
+            query.put("challengeId", id);
+
+            FindIterable<Document> results = challengeImageCollection.find(query);
+            for (Document item : results) {
+                String challengeId = item.getString("challengeId");
+                Image image = new Image(
+                        challengeId,
+                        item.getString("challengeImageLink"),
+                        item.getString("userId")
+
+                );
+                image.setId(item.getObjectId("_id").toString());
+                challengeImageList.add(image);
+            }
+            return challengeImageList;
+
+        } catch(Exception e) {
+            System.out.println("EXCEPTION!!!!");
+            e.printStackTrace();
+            throw new APPInternalServerException(99,e.getMessage());
+        }
+
+    }
+
+    @GET
+    @Path("{id}/challengeImage/{userId}")
+    @Produces({MediaType.APPLICATION_JSON})
+    public ArrayList<Image> getOneChallengeImageForUser(@PathParam("id") String id, @PathParam("userId") String userId) {
+
+        ArrayList<Image> challengeImageList = new ArrayList<Image>();
+
+        try {
+            BasicDBObject query = new BasicDBObject();
+            query.put("challengeId", id);
+            query.append("userId",userId);
+
+            FindIterable<Document> results = challengeImageCollection.find(query);
+            for (Document item : results) {
+                String challengeId = item.getString("challengeId");
+                Image image = new Image(
+                        challengeId,
+                        item.getString("challengeImageLink"),
+                        item.getString("userId")
+
+                );
+                image.setId(item.getObjectId("_id").toString());
+                challengeImageList.add(image);
+            }
+            return challengeImageList;
+
+        } catch(Exception e) {
+            System.out.println("EXCEPTION!!!!");
+            e.printStackTrace();
+            throw new APPInternalServerException(99,e.getMessage());
+        }
+
+    }
+
 
 
 /*

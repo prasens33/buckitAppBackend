@@ -7,16 +7,20 @@ public class User {
     String firstName;
     String lastName;
     String emailAddress;
+    String profilePictureLink;
+
 
     Integer score;
 
     //String profilePictureLink;
     public User(String firstName, String lastName,
-                  String emailAddress, Integer score) {
+                  String emailAddress, Integer score, String profilePictureLink) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.emailAddress = emailAddress;
         this.score = score;
+        this.profilePictureLink = profilePictureLink;
+
 
     }
 

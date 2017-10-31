@@ -24,4 +24,5 @@ dependencies {
     compile 'org.apache.logging.log4j:log4j-core:2.8.2'
     compile 'org.apache.logging.log4j:log4j-api:2.8.2'
     compile 'org.mongodb:mongodb-driver-async:3.4.2'
+    compile 'com.cloudinary:cloudinary-http44:1.16.0'
 }
