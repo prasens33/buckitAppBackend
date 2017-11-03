@@ -7,7 +7,7 @@ var lockCount = 0;
 
 
 function getDbConnection(callback){
-    MongoClient.connect("mongodb://localhost/buckitDB6", function(err, db){
+    MongoClient.connect("mongodb://localhost/buckitDB7", function(err, db){
         if(err){
             console.log("Unable to connect to Mongodb");
         }else{
@@ -70,6 +70,8 @@ function addChallengestoUser0(userId) {
         "challengeName" : "SelfieChallenge",
         "challengeDescription" : "Take selfie.",
         "challengeCreatedDate" : "20 Oct 2017",
+        "ownerChallengeImageLink" : "http://res.cloudinary.com/sem/image/upload/v1509314339/ttgltgi8sdwoh7tglwoz.jpg",
+
         "challengeType" : "funny",
         "userId" : userId
     },{
@@ -77,12 +79,14 @@ function addChallengestoUser0(userId) {
         "challengeDescription" : "Sky diving challenge.",
         "challengeCreatedDate" : "21 Oct 2017",
         "challengeType" : "funny",
+        "ownerChallengeImageLink" : "https://i.ebayimg.com/00/s/MjM2WDMxNQ==/z/wdIAAOSw-YVXksVU/$_57.JPG",
         "userId" : userId
     },{
         "challengeName" : "CodeChallenge",
         "challengeDescription" : "Write a code",
         "challengeCreatedDate" : "31 Oct 2015",
         "challengeType" : "social",
+        "ownerChallengeImageLink" : "http://res.cloudinary.com/sem/image/upload/v1509314339/ttgltgi8sdwoh7tglwoz.jpg",
         "userId" : userId
     }];
     c.forEach(function(challenge){
@@ -98,12 +102,14 @@ function addChallengestoUser1(userId) {
         "challengeDescription" : "Play ps4",
         "challengeCreatedDate" : "11 Oct 2015",
         "challengeType" : "social",
+        "ownerChallengeImageLink" : "https://i.ebayimg.com/00/s/MjM2WDMxNQ==/z/wdIAAOSw-YVXksVU/$_57.JPG",
         "userId" : userId
     },{
         "challengeName" : "Scary Challenge",
         "challengeDescription" : "Watch a horror movie.",
         "challengeCreatedDate" : "1 Oct 2015",
         "challengeType" : "social",
+        "ownerChallengeImageLink" : "https://i.ebayimg.com/00/s/MjM2WDMxNQ==/z/wdIAAOSw-YVXksVU/$_57.JPG",
         "userId" : userId
     }];
     c.forEach(function(challenge){

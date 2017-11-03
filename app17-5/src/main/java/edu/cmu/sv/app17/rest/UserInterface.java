@@ -11,6 +11,7 @@ import com.mongodb.client.MongoDatabase;
 import edu.cmu.sv.app17.exceptions.APPBadRequestException;
 import edu.cmu.sv.app17.exceptions.APPInternalServerException;
 import edu.cmu.sv.app17.exceptions.APPNotFoundException;
+import edu.cmu.sv.app17.helpers.APPListResponse;
 import edu.cmu.sv.app17.helpers.PATCH;
 import edu.cmu.sv.app17.models.*;
 import org.bson.Document;
@@ -47,7 +48,7 @@ public class UserInterface {
 
     public UserInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB6");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB7");
 
         this.collection = database.getCollection("users");
         this.challengeCollection = database.getCollection("challenges");
@@ -68,7 +69,7 @@ public class UserInterface {
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON})
-    public ArrayList<User> getAll(@DefaultValue("_id") @QueryParam("sort") String sortArg) {
+    public APPListResponse getAll(@DefaultValue("_id") @QueryParam("sort") String sortArg) {
         sortArg ="score";
         BasicDBObject sortParams = new BasicDBObject();
         List<String> sortList = Arrays.asList(sortArg.split(","));
@@ -81,7 +82,7 @@ public class UserInterface {
         FindIterable<Document> results = collection.find().sort(sortParams);
 
         if (results == null) {
-            return  userList;
+            return new APPListResponse(userList, userList.size());
         }
 
 
@@ -100,14 +101,14 @@ public class UserInterface {
         }
 
 
-        return userList;
+        return new APPListResponse(userList, userList.size());
     }
     //Get one user
 
     @GET
     @Path("{id}")
     @Produces({MediaType.APPLICATION_JSON})
-    public User getOne(@PathParam("id") String id) {
+    public APPListResponse getOne(@PathParam("id") String id) {
         BasicDBObject query = new BasicDBObject();
         try {
             query.put("_id", new ObjectId(id));
@@ -124,7 +125,7 @@ public class UserInterface {
 
             );
             user.setId(item.getObjectId("_id").toString());
-            return user;
+            return new APPListResponse(user, 1);
 
         } catch(APPNotFoundException e) {
             throw new APPNotFoundException(0,"No such challenge");
@@ -142,7 +143,7 @@ public class UserInterface {
     @GET
     @Path("{id}/challenges")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<Challenge> getChallengesForUser(@PathParam("id") String id) {
+    public APPListResponse getChallengesForUser(@PathParam("id") String id) {
 
         ArrayList<Challenge> challengeList = new ArrayList<Challenge>();
 
@@ -158,6 +159,7 @@ public class UserInterface {
                         item.getString("challengeDescription"),
                         item.getString("challengeCreatedDate"),
                         item.getString("challengeType"),
+                        item.getString("ownerChallengeImageLink"),
                         item.getString("userId")
 
 
@@ -165,7 +167,8 @@ public class UserInterface {
                 challenge.setId(item.getObjectId("_id").toString());
                 challengeList.add(challenge);
             }
-            return challengeList;
+
+            return new APPListResponse(challengeList, challengeList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -195,6 +198,8 @@ public class UserInterface {
             throw new APPBadRequestException(55,"missing challengeDescription");
         if (!json.has("challengeCreatedDate"))
             throw new APPBadRequestException(55,"missing challengeCreatedDate");
+        if (!json.has("ownerChallengeImageLink"))
+            throw new APPBadRequestException(55,"missing ownerChallengeImageLink");
         if (!json.has("challengeType"))
             throw new APPBadRequestException(55,"missing challengeType");
 
@@ -202,6 +207,7 @@ public class UserInterface {
                 .append("challengeDescription", json.getString("challengeDescription"))
                 .append("challengeCreatedDate", json.getString("challengeCreatedDate"))
                 .append("challengeType", json.getString("challengeType"))
+                .append("ownerChallengeImageLink", json.getString("ownerChallengeImageLink"))
                 .append("userId", id);
         addPoints(id);
         challengeCollection.insertOne(doc);
@@ -253,6 +259,8 @@ public class UserInterface {
 
         collection.insertOne(doc);
         String returnUserIdString = doc.get("_id").toString();
+
+        //JSONObject returnUserIdJSON = new JSONObject(returnUserIdString);
 
         return returnUserIdString;
     }
@@ -329,6 +337,9 @@ public class UserInterface {
                 doc.append("challengeCreatedDate",json.getString("challengeCreatedDate"));
             if (json.has("challengeType"))
                 doc.append("challengeType",json.getString("challengeType"));
+            if (json.has("ownerChallengeImageLink"))
+                doc.append("ownerChallengeImageLink",json.getString("ownerChallengeImageLink"));
+
             Document set = new Document("$set", doc);
             challengeCollection.updateOne(query,set);
 
@@ -342,7 +353,7 @@ public class UserInterface {
     @GET
     @Path("{id}/challenges/{challengeId}")
     @Produces({MediaType.APPLICATION_JSON})
-    public Challenge getOneChallenge(@PathParam("challengeId") String id) {
+    public APPListResponse getOneChallenge(@PathParam("challengeId") String id) {
         BasicDBObject query = new BasicDBObject();
         try {
             query.put("_id", new ObjectId(id));
@@ -355,10 +366,12 @@ public class UserInterface {
                     item.getString("challengeDescription"),
                     item.getString("challengeCreatedDate"),
                     item.getString("challengeType"),
+                    item.getString("ownerChallengeImageLink"),
                     item.getString("userId")
             );
             challenge.setId(item.getObjectId("_id").toString());
-            return challenge;
+
+            return new APPListResponse(challenge, 1);
 
         } catch(APPNotFoundException e) {
             throw new APPNotFoundException(0,"No such challenge");
@@ -401,7 +414,7 @@ public class UserInterface {
     @GET
     @Path("{id}/savedChallengeList")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<SavedChallengeList> getSavedChallengeListForUser(@PathParam("id") String id) {
+    public APPListResponse getSavedChallengeListForUser(@PathParam("id") String id) {
 
         ArrayList<SavedChallengeList> savedchallengeList = new ArrayList<SavedChallengeList>();
 
@@ -419,7 +432,8 @@ public class UserInterface {
                 savedChallenge.setId(item.getObjectId("_id").toString());
                 savedchallengeList.add(savedChallenge);
             }
-            return savedchallengeList;
+
+            return new APPListResponse(savedchallengeList,savedchallengeList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -511,7 +525,7 @@ public class UserInterface {
     @GET
     @Path("{id}/completedChallengeList")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<CompletedChallengeList> getCompletedChallengeListForUser(@PathParam("id") String id) {
+    public APPListResponse getCompletedChallengeListForUser(@PathParam("id") String id) {
 
         ArrayList<CompletedChallengeList> completedChallengeList = new ArrayList<CompletedChallengeList>();
 
@@ -529,7 +543,8 @@ public class UserInterface {
                 completedChallenge.setId(item.getObjectId("_id").toString());
                 completedChallengeList.add(completedChallenge);
             }
-            return completedChallengeList;
+
+            return new APPListResponse(completedChallengeList, completedChallengeList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -576,7 +591,7 @@ public class UserInterface {
     @GET
     @Path("{id}/notifications")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<Notification> getNotificationsForUser(@PathParam("id") String id) {
+    public APPListResponse getNotificationsForUser(@PathParam("id") String id) {
 
         ArrayList<Notification> notificationList = new ArrayList<Notification>();
 
@@ -594,7 +609,8 @@ public class UserInterface {
                 notification.setId(item.getObjectId("_id").toString());
                 notificationList.add(notification);
             }
-            return notificationList;
+
+            return new APPListResponse(notificationList, notificationList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -615,7 +631,7 @@ public class UserInterface {
     @GET
     @Path("{id}/receivedChallengeList")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<ReceivedChallengeList> getReceivedChallengeListForUser(@PathParam("id") String id) {
+    public APPListResponse getReceivedChallengeListForUser(@PathParam("id") String id) {
 
         ArrayList<ReceivedChallengeList> receivedChallengeList = new ArrayList<ReceivedChallengeList>();
 
@@ -633,7 +649,8 @@ public class UserInterface {
                 receivedChallenge.setId(item.getObjectId("_id").toString());
                 receivedChallengeList.add(receivedChallenge);
             }
-            return receivedChallengeList;
+
+            return new APPListResponse(receivedChallengeList, receivedChallengeList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -675,7 +692,7 @@ public class UserInterface {
     @GET
     @Path("{id}/friendRequest")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<FriendRequest> getReceivedFriendRequests(@PathParam("id") String id) {
+    public APPListResponse getReceivedFriendRequests(@PathParam("id") String id) {
 
         ArrayList<FriendRequest> receivedFriendRequestList = new ArrayList<FriendRequest>();
 
@@ -699,7 +716,7 @@ public class UserInterface {
                 friendRequest.setId(item.getObjectId("_id").toString());
                 receivedFriendRequestList.add(friendRequest);
             }
-            return receivedFriendRequestList;
+            return new APPListResponse(receivedFriendRequestList, receivedFriendRequestList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -776,7 +793,7 @@ public class UserInterface {
     @GET
     @Path("{id}/friends")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<Friend> getFriends(@PathParam("id") String id) {
+    public APPListResponse getFriends(@PathParam("id") String id) {
 
         ArrayList<Friend> friendList = new ArrayList<Friend>();
 
@@ -799,7 +816,7 @@ public class UserInterface {
                 friend.setId(item.getObjectId("_id").toString());
                 friendList.add(friend);
             }
-            return friendList;
+            return new APPListResponse(friendList, friendList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");

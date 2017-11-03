@@ -12,6 +12,7 @@ import com.mongodb.client.result.DeleteResult;
 import edu.cmu.sv.app17.exceptions.APPBadRequestException;
 import edu.cmu.sv.app17.exceptions.APPInternalServerException;
 import edu.cmu.sv.app17.exceptions.APPNotFoundException;
+import edu.cmu.sv.app17.helpers.APPListResponse;
 import edu.cmu.sv.app17.models.Image;
 import edu.cmu.sv.app17.helpers.PATCH;
 
@@ -36,7 +37,7 @@ public class ChallengeInterface {
 
     public ChallengeInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB6");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB7");
         collection = database.getCollection("challenges");
         this.challengeImageCollection = database.getCollection("challengeImages");
         ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
@@ -45,7 +46,7 @@ public class ChallengeInterface {
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON})
-    public ArrayList<Challenge> getAll() {
+    public APPListResponse getAll() {
 
         ArrayList<Challenge> challengeList = new ArrayList<Challenge>();
 
@@ -58,12 +59,14 @@ public class ChallengeInterface {
                         item.getString("challengeDescription"),
                         item.getString("challengeCreatedDate"),
                         item.getString("challengeType"),
+                        item.getString("ownerChallengeImageLink"),
+
                         item.getString("userId")
                 );
                 challenge.setId(item.getObjectId("_id").toString());
                 challengeList.add(challenge);
             }
-            return challengeList;
+            return new APPListResponse(challengeList, challengeList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -76,7 +79,7 @@ public class ChallengeInterface {
     @GET
     @Path("{id}")
     @Produces({ MediaType.APPLICATION_JSON})
-    public Challenge getOne(@PathParam("id") String id) {
+    public APPListResponse getOne(@PathParam("id") String id) {
 
 
         BasicDBObject query = new BasicDBObject();
@@ -92,10 +95,11 @@ public class ChallengeInterface {
                     item.getString("challengeDescription"),
                     item.getString("challengeCreatedDate"),
                     item.getString("challengeType"),
+                    item.getString("ownerChallengeImageLink"),
                     item.getString("userId")
             );
             challenge.setId(item.getObjectId("_id").toString());
-            return challenge;
+            return new APPListResponse(challenge, 1);
 
         } catch(IllegalArgumentException e) {
             throw new APPBadRequestException(45,"Doesn't look like MongoDB ID");
@@ -109,7 +113,7 @@ public class ChallengeInterface {
     @GET
     @Path("{id}/challengeImage")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<Image> getChallengeImageForUser(@PathParam("id") String id) {
+    public APPListResponse getChallengeImageForUser(@PathParam("id") String id) {
 
         ArrayList<Image> challengeImageList = new ArrayList<Image>();
 
@@ -129,7 +133,7 @@ public class ChallengeInterface {
                 image.setId(item.getObjectId("_id").toString());
                 challengeImageList.add(image);
             }
-            return challengeImageList;
+            return new APPListResponse(challengeImageList, challengeImageList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -142,7 +146,7 @@ public class ChallengeInterface {
     @GET
     @Path("{id}/challengeImage/{userId}")
     @Produces({MediaType.APPLICATION_JSON})
-    public ArrayList<Image> getOneChallengeImageForUser(@PathParam("id") String id, @PathParam("userId") String userId) {
+    public APPListResponse getOneChallengeImageForUser(@PathParam("id") String id, @PathParam("userId") String userId) {
 
         ArrayList<Image> challengeImageList = new ArrayList<Image>();
 
@@ -163,7 +167,7 @@ public class ChallengeInterface {
                 image.setId(item.getObjectId("_id").toString());
                 challengeImageList.add(image);
             }
-            return challengeImageList;
+            return new APPListResponse(challengeImageList, challengeImageList.size());
 
         } catch(Exception e) {
             System.out.println("EXCEPTION!!!!");
@@ -184,6 +188,6 @@ public class ChallengeInterface {
         if (deleteResult.getDeletedCount() < 1)
             throw new APPNotFoundException(66,"Could not delete");
 
-        return new JSONObject();
+        return new APPListResponse();
     }
 }
