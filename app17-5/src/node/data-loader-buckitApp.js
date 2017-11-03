@@ -7,7 +7,7 @@ var lockCount = 0;
 
 
 function getDbConnection(callback){
-    MongoClient.connect("mongodb://localhost/buckitDB4", function(err, db){
+    MongoClient.connect("mongodb://localhost/buckitDB6", function(err, db){
         if(err){
             console.log("Unable to connect to Mongodb");
         }else{
@@ -37,13 +37,13 @@ function addUser() {
         "firstName":    "Gary",
         "lastName":     "Peters",
         "emailAddress":  "Gary@Peters.com",
-        "score" : 10
+        "score" : 0
     },
         {
             "firstName":    "Amol",
             "lastName":     "Patil",
             "emailAddress":        "Amol@Patil.com",
-            "score" : 20
+            "score" : 0
         }];
 
     var users = dbConnection.collection('users');

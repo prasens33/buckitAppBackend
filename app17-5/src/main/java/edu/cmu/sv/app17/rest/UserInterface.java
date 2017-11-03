@@ -24,6 +24,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
+import java.lang.String;
 
 
 @Path("users")
@@ -46,7 +47,7 @@ public class UserInterface {
 
     public UserInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB4");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB6");
 
         this.collection = database.getCollection("users");
         this.challengeCollection = database.getCollection("challenges");
@@ -180,7 +181,7 @@ public class UserInterface {
     @Path("{id}/challenges")
     @Consumes({ MediaType.APPLICATION_JSON})
     @Produces({ MediaType.APPLICATION_JSON})
-    public Object create(@PathParam("id") String id, Object request) {
+    public String create(@PathParam("id") String id, Object request) {
         JSONObject json = null;
         try {
             json = new JSONObject(ow.writeValueAsString(request));
@@ -204,7 +205,8 @@ public class UserInterface {
                 .append("userId", id);
         addPoints(id);
         challengeCollection.insertOne(doc);
-        return request;
+        String returnChallengeIdString = doc.get("_id").toString();
+        return returnChallengeIdString;
     }
 
 
@@ -212,7 +214,7 @@ public class UserInterface {
     @POST
     @Consumes({ MediaType.APPLICATION_JSON})
     @Produces({ MediaType.APPLICATION_JSON})
-    public Object create(Object request) {
+    public String create(Object request) {
 
         JSONObject json = null;
         try {
@@ -237,7 +239,8 @@ public class UserInterface {
             throw new APPBadRequestException(55,"missing profilePictureLink");
         }
 
-
+        //ObjectId idString = new ObjectId("12usadahj2382");
+        //String idString = "12";
             // You need to add all other fields
             Document doc = new Document("firstName", json.getString("firstName"))
                     .append("lastName", json.getString("lastName"))
@@ -246,11 +249,12 @@ public class UserInterface {
                     .append("profilePictureLink", json.getString("profilePictureLink"));
         //collection.insertOne(doc);
         //ObjectId id = (ObjectId)doc.get("_id");
+
+
         collection.insertOne(doc);
+        String returnUserIdString = doc.get("_id").toString();
 
-
-
-        return request;
+        return returnUserIdString;
     }
 
     //Patch a specific user
@@ -282,7 +286,7 @@ public class UserInterface {
             if (json.has("score"))
                 doc.append("score",json.getInt("score"));
             if (json.has("profilePictureLink"))
-                doc.append("profilePictureLink",json.getInt("profilePictureLink"));
+                doc.append("profilePictureLink",json.getString("profilePictureLink"));
             Document set = new Document("$set", doc);
             collection.updateOne(query,set);
 
@@ -372,7 +376,7 @@ public class UserInterface {
     @Path("{id}/savedChallengeList")
     @Consumes({ MediaType.APPLICATION_JSON})
     @Produces({ MediaType.APPLICATION_JSON})
-    public Object createSavedChallengeList(@PathParam("id") String id, Object request) {
+    public String createSavedChallengeList(@PathParam("id") String id, Object request) {
         JSONObject json = null;
         try {
             json = new JSONObject(ow.writeValueAsString(request));
@@ -386,7 +390,10 @@ public class UserInterface {
         Document doc = new Document("challengeId", json.getString("challengeId"))
                 .append("userId", id);
         savedChallengeCollection.insertOne(doc);
-        return request;
+
+        String returnSavedChallengeIdString = doc.get("_id").toString();
+
+        return returnSavedChallengeIdString;
     }
 
 
@@ -422,6 +429,33 @@ public class UserInterface {
 
     }
 
+    @GET
+    @Path("{id}/savedChallengeListIds")
+    @Produces({MediaType.APPLICATION_JSON})
+    public List<String> getSavedChallengeListIdsForUser(@PathParam("id") String id) {
+
+
+        try {
+            BasicDBObject query = new BasicDBObject();
+            query.put("userId", id);
+            List <String> challengeIdArray = new ArrayList<String>();
+
+            FindIterable<Document> results = savedChallengeCollection.find(query);
+            for (Document item : results) {
+                String challengeId = item.getString("challengeId");
+                challengeIdArray.add(challengeId);
+
+            }
+            return challengeIdArray;
+
+        } catch(Exception e) {
+            System.out.println("EXCEPTION!!!!");
+            e.printStackTrace();
+            throw new APPInternalServerException(99,e.getMessage());
+        }
+
+    }
+
 
     //COMPLETE a challenge
     @POST
@@ -445,6 +479,34 @@ public class UserInterface {
         completedChallengeCollection.insertOne(doc);
         return request;
     }
+
+    @GET
+    @Path("{id}/completedChallengeIds")
+    @Produces({MediaType.APPLICATION_JSON})
+    public List<String> getCompletedChallengeListIdsForUser(@PathParam("id") String id) {
+
+
+        try {
+            BasicDBObject query = new BasicDBObject();
+            query.put("userId", id);
+            List <String> challengeIdArray = new ArrayList<String>();
+
+            FindIterable<Document> results = completedChallengeCollection.find(query);
+            for (Document item : results) {
+                String challengeId = item.getString("challengeId");
+                challengeIdArray.add(challengeId);
+
+            }
+            return challengeIdArray;
+
+        } catch(Exception e) {
+            System.out.println("EXCEPTION!!!!");
+            e.printStackTrace();
+            throw new APPInternalServerException(99,e.getMessage());
+        }
+
+    }
+
     //GET completed challenges
     @GET
     @Path("{id}/completedChallengeList")
@@ -584,7 +646,7 @@ public class UserInterface {
     @Path("{id}/friendRequest")
     @Consumes({ MediaType.APPLICATION_JSON})
     @Produces({ MediaType.APPLICATION_JSON})
-    public Object createFriendRequest(@PathParam("id") String id, Object request) {
+    public String createFriendRequest(@PathParam("id") String id, Object request) {
         JSONObject json = null;
         try {
             json = new JSONObject(ow.writeValueAsString(request));
@@ -606,7 +668,9 @@ public class UserInterface {
                 .append("requestStatus", json.getBoolean("requestStatus"));
         friendRequestCollection.insertOne(doc);
         addNotification(json.getString("receiverId"),"friendRequest");
-        return request;
+
+        String returnFriendRequestIdString = doc.get("_id").toString();
+        return returnFriendRequestIdString;
     }
     @GET
     @Path("{id}/friendRequest")
@@ -749,7 +813,7 @@ public class UserInterface {
     @Path("{id}/challengeRequest")
     @Consumes({ MediaType.APPLICATION_JSON})
     @Produces({ MediaType.APPLICATION_JSON})
-    public Object createChallengeRequest(@PathParam("id") String id, Object request) {
+    public String createChallengeRequest(@PathParam("id") String id, Object request) {
         JSONObject json = null;
         try {
             json = new JSONObject(ow.writeValueAsString(request));
@@ -770,7 +834,9 @@ public class UserInterface {
         challengeRequestCollection.insertOne(doc);
         addNotification(json.getString("challengeReceiverId"),"challengeRequest");
         createReceivedChallenges(json.getString("challengeId"),json.getString("challengeReceiverId"));
-        return request;
+
+        String returnChallengeRequestIdString = doc.get("_id").toString();
+        return returnChallengeRequestIdString;
     }
 
     @POST

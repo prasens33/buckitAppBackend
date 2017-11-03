@@ -36,7 +36,7 @@ public class ChallengeInterface {
 
     public ChallengeInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB4");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB6");
         collection = database.getCollection("challenges");
         this.challengeImageCollection = database.getCollection("challengeImages");
         ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
@@ -173,9 +173,6 @@ public class ChallengeInterface {
 
     }
 
-
-
-/*
     @DELETE
     @Path("{id}")
     @Produces({ MediaType.APPLICATION_JSON})
@@ -188,5 +185,5 @@ public class ChallengeInterface {
             throw new APPNotFoundException(66,"Could not delete");
 
         return new JSONObject();
-    }*/
+    }
 }
