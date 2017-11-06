@@ -48,7 +48,7 @@ public class UserInterface {
 
     public UserInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB7");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB8");
 
         this.collection = database.getCollection("users");
         this.challengeCollection = database.getCollection("challenges");
@@ -223,8 +223,15 @@ public class UserInterface {
     public String create(Object request) {
 
         JSONObject json = null;
+        BasicDBObject query = new BasicDBObject();
         try {
             json = new JSONObject(ow.writeValueAsString(request));
+            query.put("emailAddress", json.getString("emailAddress"));
+            Document item = collection.find(query).first();
+            if (item != null) {
+                //throw new APPBadRequestException(55,"Sorry, this user already exists");
+                return item.getObjectId("_id").toString();
+            }
         }
         catch (JsonProcessingException e) {
             throw new APPBadRequestException(33, e.getMessage());
