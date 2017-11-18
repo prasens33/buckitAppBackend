@@ -8,19 +8,20 @@ public class User {
     String lastName;
     String emailAddress;
     String profilePictureLink;
+    int challengeIndex;
 
 
     Integer score;
 
     //String profilePictureLink;
     public User(String firstName, String lastName,
-                  String emailAddress, Integer score, String profilePictureLink) {
+                  String emailAddress, Integer score, String profilePictureLink, Integer challengeIndex) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.emailAddress = emailAddress;
         this.score = score;
         this.profilePictureLink = profilePictureLink;
-
+        this.challengeIndex = challengeIndex;
 
     }
 

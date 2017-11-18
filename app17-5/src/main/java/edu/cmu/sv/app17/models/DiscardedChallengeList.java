@@ -1,6 +1,6 @@
 package edu.cmu.sv.app17.models;
 
-public class CompletedChallengeList {
+public class DiscardedChallengeList {
     String id = null;
     String userId;
     String challengeId;
@@ -8,9 +8,10 @@ public class CompletedChallengeList {
 
 
 
-    public CompletedChallengeList(String challengeId, String userId, String challengeName) {
-        this.userId = userId;
+    public DiscardedChallengeList(String challengeId, String userId, String challengeName) {
+
         this.challengeId = challengeId;
+        this.userId = userId;
         this.challengeName = challengeName;
 
     }

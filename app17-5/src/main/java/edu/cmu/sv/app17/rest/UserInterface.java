@@ -33,8 +33,10 @@ public class UserInterface {
 
     private MongoCollection<Document> collection;
     private MongoCollection<Document> challengeCollection;
+    private MongoCollection<Document> myChallengeCollection;
     private MongoCollection<Document> savedChallengeCollection;
     private MongoCollection<Document> completedChallengeCollection;
+    private MongoCollection<Document> discardedChallengeCollection;
     private MongoCollection<Document> notificationCollection;
     private MongoCollection<Document> receivedChallengeCollection;
     private MongoCollection<Document> friendRequestCollection;
@@ -48,7 +50,7 @@ public class UserInterface {
 
     public UserInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB8");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB10");
 
         this.collection = database.getCollection("users");
         this.challengeCollection = database.getCollection("challenges");
@@ -61,11 +63,13 @@ public class UserInterface {
         this.challengeRequestCollection = database.getCollection("challengeRequests");
         this.challengeImageCollection = database.getCollection("challengeImages");
         this.profileImageCollection = database.getCollection("profileImages");
+        this.myChallengeCollection = database.getCollection("myChallenges");
+        this.discardedChallengeCollection = database.getCollection("discardedChallenges");
 
         ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
 
     }
-    //GET all uses
+    //GET all users
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON})
@@ -93,7 +97,8 @@ public class UserInterface {
                     item.getString("lastName"),
                     item.getString("emailAddress"),
                     item.getInteger("score"),
-                    item.getString("profilePictureLink")
+                    item.getString("profilePictureLink"),
+                    item.getInteger("challengeIndex")
 
             );
             user.setId(item.getObjectId("_id").toString());
@@ -121,7 +126,8 @@ public class UserInterface {
                     item.getString("lastName"),
                     item.getString("emailAddress"),
                     item.getInteger("score"),
-                    item.getString("profilePictureLink")
+                    item.getString("profilePictureLink"),
+                    item.getInteger("challengeIndex")
 
             );
             user.setId(item.getObjectId("_id").toString());
@@ -259,7 +265,8 @@ public class UserInterface {
                     .append("lastName", json.getString("lastName"))
                     .append("emailAddress", json.getString("emailAddress"))
                     .append("score", json.getInt("score"))
-                    .append("profilePictureLink", json.getString("profilePictureLink"));
+                    .append("profilePictureLink", json.getString("profilePictureLink"))
+                    .append("challengeIndex", 0);
         //collection.insertOne(doc);
         //ObjectId id = (ObjectId)doc.get("_id");
 
@@ -312,9 +319,6 @@ public class UserInterface {
         return request;
     }
 
-    
-    
-    
 
     //Patch a challenge
     @PATCH
@@ -390,6 +394,94 @@ public class UserInterface {
 
     }
 
+    //GET 10 challenges for a specific user
+    @GET
+    @Path("{id}/myChallengeList")
+    @Produces({MediaType.APPLICATION_JSON})
+    public APPListResponse getMyChallengeListForUser(@PathParam("id") String id, @DefaultValue("10") @QueryParam("count") int count) {
+
+        ArrayList<Challenge> challengeList = new ArrayList<Challenge>();
+        int challengeOffset;
+
+        try {
+            BasicDBObject query = new BasicDBObject();
+            query.put("_id", new ObjectId(id));
+
+            Document item = collection.find(query).first();
+            if (item == null) {
+                throw new APPNotFoundException(0, "No such user, my friend");
+            }
+            challengeOffset = item.getInteger("challengeIndex");
+
+            FindIterable<Document> results = challengeCollection.find().skip(challengeOffset).limit(count);
+            for (Document item1 : results) {
+                String challengeName = item1.getString("challengeName");
+                Challenge challenge = new Challenge(
+                        challengeName,
+                        item1.getString("challengeDescription"),
+                        item1.getString("challengeCreatedDate"),
+                        item1.getString("challengeType"),
+                        item1.getString("ownerChallengeImageLink"),
+                        item1.getString("userId")
+
+                );
+                challenge.setId(item1.getObjectId("_id").toString());
+                challengeList.add(challenge);
+            }
+
+
+            return new APPListResponse(challengeList, challengeList.size());
+
+
+        } catch(Exception e) {
+            System.out.println("EXCEPTION!!!!");
+            e.printStackTrace();
+            throw new APPInternalServerException(99,e.getMessage());
+        }
+
+    }
+
+    //Discard a challenge in discardChallengeList
+    @POST
+    @Path("{id}/discardedChallengeList")
+    @Consumes({ MediaType.APPLICATION_JSON})
+    @Produces({ MediaType.APPLICATION_JSON})
+    public String createDiscardedChallengeList(@PathParam("id") String id, Object request) {
+        JSONObject json = null;
+        BasicDBObject query = new BasicDBObject();
+        Document doc_user = new Document();
+        try {
+            json = new JSONObject(ow.writeValueAsString(request));
+
+            query.put("_id", new ObjectId(id));
+            Document item = collection.find(query).first();
+
+            int challengeOffset = item.getInteger("challengeIndex");
+            challengeOffset = challengeOffset + 1;
+            doc_user.append("challengeIndex", challengeOffset);
+        }
+        catch (JsonProcessingException e) {
+            throw new APPBadRequestException(33, e.getMessage());
+        }
+        if (!json.has("challengeId"))
+            throw new APPBadRequestException(55,"missing challengeId");
+        if (!json.has("challengeName"))
+            throw new APPBadRequestException(55,"missing challengeName");
+
+        Document doc = new Document("challengeId", json.getString("challengeId"))
+                .append("userId", id)
+                .append("challengeName", json.getString("challengeName"));
+        discardedChallengeCollection.insertOne(doc);
+
+        Document set = new Document("$set", doc_user);
+        collection.updateOne(query,set);
+
+
+        String returnDiscardedChallengeIdString = doc.get("_id").toString();
+
+        return returnDiscardedChallengeIdString;
+    }
+
 
     //SAVE/POST a challenge in savedChallengeList
     @POST
@@ -398,18 +490,33 @@ public class UserInterface {
     @Produces({ MediaType.APPLICATION_JSON})
     public String createSavedChallengeList(@PathParam("id") String id, Object request) {
         JSONObject json = null;
+        BasicDBObject query = new BasicDBObject();
+        Document doc_user = new Document();
         try {
             json = new JSONObject(ow.writeValueAsString(request));
+
+            query.put("_id", new ObjectId(id));
+            Document item = collection.find(query).first();
+
+            int challengeOffset = item.getInteger("challengeIndex");
+            challengeOffset = challengeOffset + 1;
+            doc_user.append("challengeIndex", challengeOffset);
         }
         catch (JsonProcessingException e) {
             throw new APPBadRequestException(33, e.getMessage());
         }
         if (!json.has("challengeId"))
             throw new APPBadRequestException(55,"missing challengeId");
+        if (!json.has("challengeName"))
+            throw new APPBadRequestException(55,"missing challengeName");
 
         Document doc = new Document("challengeId", json.getString("challengeId"))
-                .append("userId", id);
+                .append("userId", id)
+                .append("challengeName", json.getString("challengeName"));
         savedChallengeCollection.insertOne(doc);
+
+        Document set = new Document("$set", doc_user);
+        collection.updateOne(query,set);
 
         String returnSavedChallengeIdString = doc.get("_id").toString();
 
@@ -434,7 +541,8 @@ public class UserInterface {
                 String challengeId = item.getString("challengeId");
                 SavedChallengeList savedChallenge = new SavedChallengeList(
                         challengeId,
-                        item.getString("userId")
+                        item.getString("userId"),
+                        item.getString("challengeName")
                 );
                 savedChallenge.setId(item.getObjectId("_id").toString());
                 savedchallengeList.add(savedChallenge);
@@ -485,18 +593,34 @@ public class UserInterface {
     @Produces({ MediaType.APPLICATION_JSON})
     public Object createCompletedChallengeList(@PathParam("id") String id, Object request) {
         JSONObject json = null;
+        BasicDBObject query = new BasicDBObject();
+        Document doc_user = new Document();
         try {
             json = new JSONObject(ow.writeValueAsString(request));
+
+            query.put("_id", new ObjectId(id));
+            Document item = collection.find(query).first();
+
+            int challengeOffset = item.getInteger("challengeIndex");
+            challengeOffset = challengeOffset + 1;
+            doc_user.append("challengeIndex", challengeOffset);
         }
         catch (JsonProcessingException e) {
             throw new APPBadRequestException(33, e.getMessage());
         }
         if (!json.has("challengeId"))
             throw new APPBadRequestException(55,"missing challengeId");
+        if (!json.has("challengeName"))
+            throw new APPBadRequestException(55,"missing challengeName");
 
         Document doc = new Document("challengeId", json.getString("challengeId"))
-                .append("userId", id);
+                .append("userId", id)
+                .append("challengeName", json.getString("challengeName"));
         addPoints(id);
+
+        Document set = new Document("$set", doc_user);
+        collection.updateOne(query,set);
+
         completedChallengeCollection.insertOne(doc);
         return request;
     }
@@ -545,7 +669,9 @@ public class UserInterface {
                 String challengeId = item.getString("challengeId");
                 CompletedChallengeList completedChallenge = new CompletedChallengeList(
                         challengeId,
-                        item.getString("userId")
+                        item.getString("userId"),
+                        item.getString("challengeName")
+
                 );
                 completedChallenge.setId(item.getObjectId("_id").toString());
                 completedChallengeList.add(completedChallenge);

@@ -12,13 +12,13 @@ import javax.ws.rs.core.MediaType;
 public class APPApplication extends ResourceConfig {
     public APPApplication() {
         // Define the package which contains the service classes.
-        packages("edu.cmu.sv.app17.rest");
+        packages("SEM Project");
     }
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON})
     public Object getAll() {
-        Version ver = new Version("5.1.4", "2017-09-29");
+        Version ver = new Version("1.1.2", "2017-11-05");
         return ver;
     }
 

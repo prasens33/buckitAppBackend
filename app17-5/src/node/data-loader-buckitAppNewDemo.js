@@ -37,17 +37,29 @@ function addUser() {
         "firstName":    "Gary",
         "lastName":     "Peters",
         "emailAddress":  "Gary@Peters.com",
-        "score" : 1000
+        "profilePictureLink" : "https://pbs.twimg.com/profile_images/921025087251386369/11o7UGiT_400x400.jpg",
+        "score" : 1000,
+        "challengeIndex" : 0
     },
         {
             "firstName":    "Amol",
             "lastName":     "Patil",
             "emailAddress":        "Amol@Patil.com",
-            "score" : 1000
+            "profilePictureLink" : "https://pbs.twimg.com/profile_images/501901162359312385/ZPKIPQhm.jpeg",
+            "score" : 1000,
+            "challengeIndex" : 0
         }];
 
     var users = dbConnection.collection('users');
     users.insertOne(d[0], function(err,doc){
+        if (err){
+            console.log("Could not add user 1");
+        }
+        else {
+            addChallengestoUser(doc.ops[0]._id.toString(),10);
+        }
+    })
+    users.insertOne(d[1], function(err,doc){
         if (err){
             console.log("Could not add user 1");
         }

@@ -37,7 +37,7 @@ public class ChallengeInterface {
 
     public ChallengeInterface() {
         MongoClient mongoClient = new MongoClient();
-        MongoDatabase database = mongoClient.getDatabase("buckitDB7");
+        MongoDatabase database = mongoClient.getDatabase("buckitDB10");
         collection = database.getCollection("challenges");
         this.challengeImageCollection = database.getCollection("challengeImages");
         ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
