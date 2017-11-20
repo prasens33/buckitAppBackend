@@ -38,7 +38,7 @@ function addUser() {
         "lastName":     "Admin",
         "emailAddress":  "sytem@admin.com",
         "profilePictureLink" : "",
-        "score" : 0,
+        "score" : 1900,
         "challengeIndex" : 0
     },
         {
@@ -46,7 +46,7 @@ function addUser() {
             "lastName":     "Patil",
             "emailAddress":        "Amol@Patil.com",
             "profilePictureLink" : "https://pbs.twimg.com/profile_images/501901162359312385/ZPKIPQhm.jpeg",
-            "score" : 1000,
+            "score" : 0,
             "challengeIndex" : 0
         }];
 
@@ -56,18 +56,14 @@ function addUser() {
             console.log("Could not add user 1");
         }
         else {
-            addChallengestoUser(doc.ops[0]._id.toString(),10);
+            addChallengestoUser(doc.ops[0]._id.toString(),19);
         }
     })
     users.insertOne(d[1], function(err,doc){
         if (err){
             console.log("Could not add user 1");
         }
-        else {
-            addChallengestoUser(doc.ops[0]._id.toString(),10);
-        }
     })
-
 }
 
 
@@ -80,11 +76,11 @@ function addChallengestoUser(userId,count) {
     var c = [];
     for (i=0;i<count;i++){
         console.log("Trying")
-        var challengeName = name[Math.floor(Math.random() * name.length)];
-        var challengeDescription = description[Math.floor(Math.random() * description.length)];
-        var challengeCreatedDate = "6 Nov 2017";
+        var challengeName = name[i];
+        var challengeDescription = description[i];
+        var challengeCreatedDate = date[i];
         var challengeType = "Social";
-        var ownerChallengeImageLink = ownerChallengeImages[Math.floor(Math.random() * ownerChallengeImages.length)];
+        var ownerChallengeImageLink = ownerChallengeImages[i];
 
            c. push({
                challengeName: challengeName,

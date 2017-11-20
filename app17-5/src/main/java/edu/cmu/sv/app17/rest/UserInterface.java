@@ -595,6 +595,7 @@ public class UserInterface {
         JSONObject json = null;
         BasicDBObject query = new BasicDBObject();
         BasicDBObject query_challenge = new BasicDBObject();
+        BasicDBObject query_saved_challenge = new BasicDBObject();
         Document doc_user = new Document();
         String challengeOwnerId;
         try {
@@ -602,13 +603,17 @@ public class UserInterface {
 
             query.put("_id", new ObjectId(id));
             query_challenge.put("_id", new ObjectId(json.getString("challengeId")));
+            query_saved_challenge.put("challengeId", json.getString("challengeId"));
             Document item = collection.find(query).first();
             Document item_challenge = challengeCollection.find(query_challenge).first();
-
-            challengeOwnerId = item_challenge.getString("userId");
+            Document item_saved_challenge = savedChallengeCollection.find(query_saved_challenge).first();
 
             int challengeOffset = item.getInteger("challengeIndex");
-            challengeOffset = challengeOffset + 1;
+            if(item_saved_challenge == null){
+                challengeOffset = challengeOffset + 1;
+            }
+            challengeOwnerId = item_challenge.getString("userId");
+
             doc_user.append("challengeIndex", challengeOffset);
         }
         catch (JsonProcessingException e) {
