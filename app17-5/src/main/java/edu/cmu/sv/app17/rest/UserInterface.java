@@ -594,12 +594,18 @@ public class UserInterface {
     public Object createCompletedChallengeList(@PathParam("id") String id, Object request) {
         JSONObject json = null;
         BasicDBObject query = new BasicDBObject();
+        BasicDBObject query_challenge = new BasicDBObject();
         Document doc_user = new Document();
+        String challengeOwnerId;
         try {
             json = new JSONObject(ow.writeValueAsString(request));
 
             query.put("_id", new ObjectId(id));
+            query_challenge.put("_id", new ObjectId(json.getString("challengeId")));
             Document item = collection.find(query).first();
+            Document item_challenge = challengeCollection.find(query_challenge).first();
+
+            challengeOwnerId = item_challenge.getString("userId");
 
             int challengeOffset = item.getInteger("challengeIndex");
             challengeOffset = challengeOffset + 1;
@@ -615,7 +621,9 @@ public class UserInterface {
 
         Document doc = new Document("challengeId", json.getString("challengeId"))
                 .append("userId", id)
-                .append("challengeName", json.getString("challengeName"));
+                .append("challengeName", json.getString("challengeName"))
+                .append("challengeOwnerId", challengeOwnerId)
+                .append("challengeImageLink", json.getString("challengeImageLink"));
         addPoints(id);
 
         Document set = new Document("$set", doc_user);
@@ -670,8 +678,9 @@ public class UserInterface {
                 CompletedChallengeList completedChallenge = new CompletedChallengeList(
                         challengeId,
                         item.getString("userId"),
-                        item.getString("challengeName")
-
+                        item.getString("challengeName"),
+                        item.getString("challengeOwnerId"),
+                        item.getString("challengeImageLink")
                 );
                 completedChallenge.setId(item.getObjectId("_id").toString());
                 completedChallengeList.add(completedChallenge);
