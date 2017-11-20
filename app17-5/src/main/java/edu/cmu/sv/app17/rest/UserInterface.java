@@ -623,7 +623,8 @@ public class UserInterface {
                 .append("userId", id)
                 .append("challengeName", json.getString("challengeName"))
                 .append("challengeOwnerId", challengeOwnerId)
-                .append("challengeImageLink", json.getString("challengeImageLink"));
+                .append("challengeImageLink", json.getString("challengeImageLink"))
+                .append("challengeDescription", json.getString("challengeDescription"));
         addPoints(id);
 
         Document set = new Document("$set", doc_user);
@@ -680,7 +681,8 @@ public class UserInterface {
                         item.getString("userId"),
                         item.getString("challengeName"),
                         item.getString("challengeOwnerId"),
-                        item.getString("challengeImageLink")
+                        item.getString("challengeImageLink"),
+                        item.getString("challengeDescription")
                 );
                 completedChallenge.setId(item.getObjectId("_id").toString());
                 completedChallengeList.add(completedChallenge);
